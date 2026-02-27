@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebPrompt — Website Workflow Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --bg:#0a0b0e;
+  --s1:#0f1014;
+  --s2:#141519;
+  --s3:#1a1b21;
+  --border:#1f2028;
+  --border2:#2a2c38;
+  --amber:#f59e0b;
+  --amber-dim:rgba(245,158,11,0.12);
+  --amber-glow:rgba(245,158,11,0.06);
+  --green:#22c55e;
+  --green-dim:rgba(34,197,94,0.1);
+  --red:#ef4444;
+  --blue:#3b82f6;
+  --text:#d4d8e2;
+  --text2:#7c8294;
+  --text3:#3f4356;
+  --display:'Syne',sans-serif;
+  --mono:'DM Mono',monospace;
+  --body:'Instrument Sans',sans-serif;
+}
+
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--body);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* GRID BACKGROUND */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(245,158,11,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,158,11,0.03) 1px, transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+}
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 15% 20%, rgba(245,158,11,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 85% 70%, rgba(59,130,246,0.03) 0%, transparent 60%);
+  pointer-events:none;z-index:0;
+}
+
+.wrap{
+  position:relative;z-index:1;
+  max-width:860px;
+  margin:0 auto;
+  padding:0 1.25rem 5rem;
+}
+
+/* ─── HEADER ─── */
+.header{
+  padding:3.5rem 0 2rem;
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;
+}
+
+.header-tag{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  font-family:var(--mono);font-size:0.68rem;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--amber);
+  border:1px solid rgba(245,158,11,0.25);
+  background:var(--amber-dim);
+  padding:0.3rem 0.85rem;border-radius:3px;
+  margin-bottom:1.75rem;
+}
+.header-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--amber);animation:blink 1.8s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+h1{
+  font-family:var(--display);
+  font-size:clamp(2.2rem,5.5vw,4rem);
+  font-weight:800;
+  letter-spacing:-0.03em;
+  line-height:1.05;
+  color:#fff;
+  margin-bottom:1rem;
+}
+h1 em{
+  font-style:normal;
+  color:var(--amber);
+  position:relative;
+}
+
+.header-desc{
+  font-size:0.95rem;
+  color:var(--text2);
+  line-height:1.7;
+  max-width:460px;
+}
+
+/* ─── MODE SELECTOR ─── */
+.mode-wrap{
+  display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;
+  margin:2.25rem 0 1.5rem;
+}
+
+.mode-card{
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:8px;padding:1.4rem;
+  cursor:pointer;transition:all 0.18s;
+  position:relative;overflow:hidden;
+}
+.mode-card::before{
+  content:'';position:absolute;
+  top:0;left:0;right:0;height:2px;
+  background:var(--amber);
+  transform:scaleX(0);
+  transform-origin:left;
+  transition:transform 0.25s;
+}
+.mode-card:hover{border-color:var(--border2);}
+.mode-card:hover::before{transform:scaleX(0.5);}
+.mode-card.active{
+  border-color:rgba(245,158,11,0.4);
+  background:linear-gradient(135deg,var(--s2),var(--s1));
+}
+.mode-card.active::before{transform:scaleX(1);}
+
+.mode-icon{
+  width:36px;height:36px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;margin-bottom:0.85rem;
+  background:var(--s3);border:1px solid var(--border2);
+}
+.mode-title{
+  font-family:var(--display);font-size:1rem;font-weight:700;
+  color:#fff;margin-bottom:0.35rem;
+}
+.mode-desc{font-size:0.78rem;color:var(--text2);line-height:1.55;}
+.mode-badge{
+  display:inline-block;margin-top:0.85rem;
+  font-family:var(--mono);font-size:0.62rem;letter-spacing:0.08em;
+  text-transform:uppercase;padding:0.18rem 0.55rem;border-radius:2px;
+}
+.badge-free{background:var(--green-dim);color:var(--green);border:1px solid rgba(34,197,94,0.2);}
+.badge-ai{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,0.2);}
+
+/* ─── API KEY ─── */
+.api-box{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:8px;padding:1.25rem;
+  margin-bottom:1.25rem;
+  display:none;animation:slideDown 0.25s ease;
+}
+.api-box.show{display:block;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+
+.api-row{display:flex;gap:0.6rem;}
+.api-label{
+  font-family:var(--mono);font-size:0.68rem;
+  letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--text2);margin-bottom:0.6rem;
+}
+.api-input{
+  flex:1;background:var(--bg);
+  border:1px solid var(--border2);
+  color:var(--text);font-family:var(--mono);font-size:0.82rem;
+  padding:0.55rem 0.9rem;border-radius:5px;outline:none;
+  transition:border-color 0.18s;
+}
+.api-input:focus{border-color:rgba(245,158,11,0.5);}
+.api-input::placeholder{color:var(--text3);}
+.btn-connect{
+  background:var(--amber);color:#000;font-weight:600;
+  border:none;border-radius:5px;padding:0 1rem;
+  font-family:var(--body);font-size:0.82rem;cursor:pointer;
+  white-space:nowrap;transition:all 0.18s;
+}
+.btn-connect:hover{background:#fbbf24;}
+.api-msg{
+  margin-top:0.5rem;font-family:var(--mono);font-size:0.7rem;
+}
+.ok{color:var(--green);}
+.err{color:var(--red);}
+
+/* ─── PROGRESS ─── */
+.progress-wrap{margin-bottom:1.25rem;}
+.progress-meta{
+  display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:0.68rem;
+  color:var(--text2);margin-bottom:0.5rem;
+}
+.progress-track{
+  height:2px;background:var(--border);
+  border-radius:1px;overflow:hidden;
+}
+.progress-bar{
+  height:100%;background:linear-gradient(90deg,var(--amber),#fbbf24);
+  border-radius:1px;transition:width 0.5s cubic-bezier(.4,0,.2,1);
+  width:0%;
+}
+
+/* ─── CHAT WINDOW ─── */
+.chat-win{
+  background:var(--s1);
+  border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;
+}
+
+.chat-topbar{
+  background:var(--s2);
+  border-bottom:1px solid var(--border);
+  padding:0.85rem 1.25rem;
+  display:flex;align-items:center;gap:0.75rem;
+}
+.topbar-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--amber);animation:blink 2s infinite;
+}
+.topbar-name{
+  font-family:var(--display);font-size:0.9rem;
+  font-weight:700;color:#fff;
+}
+.topbar-mode{
+  margin-left:auto;
+  font-family:var(--mono);font-size:0.65rem;
+  color:var(--text2);letter-spacing:0.05em;
+}
+.topbar-mode span{
+  color:var(--amber);
+}
+
+/* messages */
+.msgs{
+  height:500px;overflow-y:auto;
+  padding:1.25rem;
+  display:flex;flex-direction:column;gap:0.85rem;
+}
+.msgs::-webkit-scrollbar{width:3px;}
+.msgs::-webkit-scrollbar-track{background:transparent;}
+.msgs::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.msg{
+  display:flex;gap:0.65rem;
+  animation:msgFade 0.28s ease;
+}
+@keyframes msgFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.av{
+  width:28px;height:28px;border-radius:50%;
+  flex-shrink:0;display:flex;align-items:center;
+  justify-content:center;font-size:0.68rem;
+  font-weight:700;margin-top:2px;font-family:var(--mono);
+}
+.av-bot{background:var(--amber);color:#000;}
+.av-user{background:var(--s3);border:1px solid var(--border2);color:var(--text2);}
+
+.bubble{
+  max-width:84%;
+  padding:0.8rem 1rem;
+  border-radius:10px;
+  font-size:0.88rem;line-height:1.65;
+}
+.bot .bubble{
+  background:var(--s2);border:1px solid var(--border);
+  border-bottom-left-radius:3px;color:var(--text);
+}
+.user .bubble{
+  background:linear-gradient(135deg,rgba(245,158,11,0.9),rgba(251,191,36,0.85));
+  color:#000;font-weight:500;
+  border-bottom-right-radius:3px;margin-left:auto;
+}
+.msg.user{flex-direction:row-reverse;}
+
+.bubble b{color:var(--amber);font-weight:600;}
+.bot .bubble b{color:#fbbf24;}
+
+/* code block inside bubble */
+.code-block{
+  background:var(--bg);
+  border:1px solid var(--border2);
+  border-left:2px solid var(--amber);
+  border-radius:5px;
+  padding:0.85rem;margin:0.6rem 0 0.3rem;
+  font-family:var(--mono);font-size:0.75rem;
+  color:#e5c07b;white-space:pre-wrap;word-break:break-word;
+  line-height:1.6;max-height:320px;overflow-y:auto;
+}
+.code-block::-webkit-scrollbar{width:3px;}
+.code-block::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* option chips inside bubble */
+.chip{
+  display:inline-block;
+  background:var(--s3);border:1px solid var(--border2);
+  color:var(--text);border-radius:4px;
+  padding:0.28rem 0.7rem;margin:0.2rem 0.15rem 0 0;
+  font-size:0.78rem;cursor:pointer;transition:all 0.15s;
+}
+.chip:hover{border-color:rgba(245,158,11,0.4);color:var(--amber);}
+
+/* typing */
+.typing-wrap{display:flex;align-items:center;gap:5px;padding:2px 0;}
+.typing-wrap span{
+  width:5px;height:5px;background:var(--text3);border-radius:50%;
+  animation:typing 1.3s infinite;
+}
+.typing-wrap span:nth-child(2){animation-delay:.2s;}
+.typing-wrap span:nth-child(3){animation-delay:.4s;}
+@keyframes typing{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+/* quick replies */
+.qr-row{
+  border-top:1px solid var(--border);
+  padding:0.7rem 1.25rem;
+  display:flex;flex-wrap:wrap;gap:0.4rem;
+  background:var(--s2);
+  min-height:48px;
+}
+
+.qr-btn{
+  background:var(--bg);
+  border:1px solid var(--border2);
+  color:var(--text2);font-size:0.77rem;
+  padding:0.28rem 0.7rem;border-radius:4px;
+  cursor:pointer;transition:all 0.15s;font-family:var(--body);
+}
+.qr-btn:hover{border-color:rgba(245,158,11,0.35);color:var(--amber);}
+
+/* input */
+.input-row{
+  border-top:1px solid var(--border);
+  padding:0.85rem 1.25rem;
+  display:flex;gap:0.65rem;align-items:flex-end;
+  background:var(--s2);
+}
+.txt-input{
+  flex:1;background:var(--bg);
+  border:1px solid var(--border2);
+  color:var(--text);font-family:var(--body);font-size:0.88rem;
+  padding:0.65rem 0.9rem;border-radius:7px;
+  outline:none;resize:none;
+  min-height:40px;max-height:110px;
+  line-height:1.5;transition:border-color 0.18s;
+}
+.txt-input:focus{border-color:rgba(245,158,11,0.4);}
+.txt-input::placeholder{color:var(--text3);}
+
+.send{
+  width:40px;height:40px;
+  background:var(--amber);border:none;
+  border-radius:7px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.18s;flex-shrink:0;
+}
+.send:hover{background:#fbbf24;transform:scale(1.06);}
+.send:disabled{opacity:0.35;cursor:not-allowed;transform:none;}
+.send svg{width:16px;height:16px;fill:#000;}
+
+/* copy button */
+.copy-btn{
+  display:inline-flex;align-items:center;gap:0.35rem;
+  background:var(--amber-dim);border:1px solid rgba(245,158,11,0.2);
+  color:var(--amber);font-family:var(--mono);font-size:0.68rem;
+  padding:0.22rem 0.6rem;border-radius:3px;cursor:pointer;
+  transition:all 0.15s;margin-top:0.5rem;letter-spacing:0.04em;
+}
+.copy-btn:hover{background:rgba(245,158,11,0.18);}
+.copy-btn.done{color:var(--green);border-color:rgba(34,197,94,0.25);}
+
+/* reset */
+.reset-btn{
+  margin-top:0.85rem;
+  background:transparent;border:1px solid var(--border2);
+  color:var(--text2);font-size:0.8rem;
+  padding:0.45rem 1rem;border-radius:5px;
+  cursor:pointer;transition:all 0.15s;font-family:var(--body);
+}
+.reset-btn:hover{border-color:rgba(239,68,68,0.4);color:var(--red);}
+
+/* prompt output card */
+.prompt-card{
+  background:var(--bg);border:1px solid var(--border);
+  border-top:2px solid var(--amber);
+  border-radius:6px;padding:1rem;margin:0.5rem 0;
+}
+.prompt-title{
+  font-family:var(--mono);font-size:0.72rem;
+  letter-spacing:0.08em;color:var(--amber);
+  text-transform:uppercase;margin-bottom:0.6rem;
+  display:flex;align-items:center;gap:0.4rem;
+}
+.prompt-title::before{content:'⚡';}
+
+@media(max-width:560px){
+  .mode-wrap{grid-template-columns:1fr;}
+  .msgs{height:420px;}
+  h1{font-size:2rem;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-tag"><span></span>Website Prompt Generator</div>
+    <h1>Turn Your Idea Into<br>a <em>Perfect Prompt</em></h1>
+    <p class="header-desc">Answer 8 quick questions. Get ready-to-use prompts for Claude, Cursor, Lovable, Framer, Durable &amp; AI Studio.</p>
+  </header>
+
+  <!-- MODE CARDS -->
+  <div class="mode-wrap">
+    <div class="mode-card active" id="card-static" onclick="switchMode('static')">
+      <div class="mode-icon">⚡</div>
+      <div class="mode-title">Static Mode</div>
+      <div class="mode-desc">Instant prompts from built-in templates. No API key. Works completely offline. Best for beginners.</div>
+      <span class="mode-badge badge-free">Free · No Key Needed</span>
+    </div>
+    <div class="mode-card" id="card-gemini" onclick="switchMode('gemini')">
+      <div class="mode-icon">✨</div>
+      <div class="mode-title">Gemini AI Mode</div>
+      <div class="mode-desc">Uses Gemini API for smarter, more personalized prompts based on your specific answers and context.</div>
+      <span class="mode-badge badge-ai">Gemini API Key Required</span>
+    </div>
+  </div>
+
+  <!-- API KEY -->
+  <div class="api-box" id="api-box">
+    <div class="api-label">Your Gemini API Key</div>
+    <div class="api-row">
+      <input type="password" class="api-input" id="key-in" placeholder="AIzaSy... (get free at aistudio.google.com)">
+      <button class="btn-connect" onclick="connectKey()">Connect</button>
+    </div>
+    <div class="api-msg" id="key-msg"></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span id="step-label">Ready to start</span>
+      <span id="step-pct">0%</span>
+    </div>
+    <div class="progress-track"><div class="progress-bar" id="pbar"></div></div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="chat-win">
+    <div class="chat-topbar">
+      <div class="topbar-dot"></div>
+      <div class="topbar-name">WebPrompt Assistant</div>
+      <div class="topbar-mode" id="mode-label">Mode: <span>⚡ Static</span></div>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div class="qr-row" id="qr-row"></div>
+    <div class="input-row">
+      <textarea class="txt-input" id="inp" placeholder="Type your answer or pick an option above..." rows="1"
+        onkeydown="onKey(event)" oninput="growInput(this)"></textarea>
+      <button class="send" id="send-btn" onclick="send()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <button class="reset-btn" onclick="restart()">↺ Start Over</button>
+
+</div><!-- /wrap -->
+
+<script>
+// ═══════════════════════════════
+// CONSTANTS & STATE
+// ═══════════════════════════════
+let mode='static', apiKey='', step=0, busy=false;
+let data={};
+const TOTAL=9;
+
+const FEATURES={
+  '1':'User Login & Registration','2':'Blog / Articles',
+  '3':'Contact Form','4':'Search & Filter',
+  '5':'Product Catalog','6':'Shopping Cart & Checkout',
+  '7':'Payment Integration','8':'User Dashboard',
+  '9':'Email Notifications','10':'SEO Optimization',
+  '11':'Admin Analytics','12':'Social Sharing'
+};
+
+const WTYPES={
+  '1':'Informational (Blog/News)','2':'E-commerce',
+  '3':'Lead Generation / Portfolio','4':'SaaS / Web App',
+  '5':'Community / Forum','6':'Marketplace',
+  '7':'Educational / Course','8':'Creative Portfolio',
+  '9':'Local Business','10':'Other'
+};
+
+const PLATS={
+  '1':'Claude','2':'Cursor','3':'Lovable',
+  '4':'Durable','5':'Framer','6':'Google AI Studio','7':'Auto'
+};
+
+const PROMPT_COUNTS={'1':'auto','2':1,'3':2,'4':3,'skip':'auto'};
+
+// ═══════════════════════════════
+// FLOW STEPS
+// ═══════════════════════════════
+const STEPS=[
+  {
+    id:'intro', save:null,
+    msg:`👋 <b>Welcome to WebPrompt!</b><br><br>I'll ask you a few quick questions, then generate <b>ready-to-use prompts</b> for your chosen AI tool.<br><br>Let's start with your project context — answer what you can, type <b>SKIP</b> for anything you don't know yet:<br><br><b>📋 Tell me about your project:</b><br>→ Do you have an existing website? What's wrong with it?<br>→ Business / project name?<br>→ Who is your target audience?<br>→ Any competitor sites you admire?<br>→ What does success look like in 90 days?`,
+    qr:['SKIP — just start']
+  },
+  {
+    id:'idea', save:'ctx',
+    msg:`Got it! Quick question — <b>do you already have a website idea?</b>`,
+    qr:['✅ Yes, I have an idea','💡 No, suggest me ideas']
+  },
+  {
+    id:'wtype', save:'idea',
+    msg:`<b>What kind of website?</b><br><br>1. 📝 Informational — Blog, news, wiki<br>2. 🛒 E-commerce — Sell products<br>3. 🎯 Lead Gen / Portfolio<br>4. ⚙️ SaaS / Web App<br>5. 👥 Community / Forum<br>6. 🏪 Marketplace<br>7. 📚 Educational / Courses<br>8. 🎨 Creative Portfolio<br>9. 🍽️ Local Business<br>10. 🔧 Other — type it`,
+    qr:['1','2','3','4','5','6','7','8','9']
+  },
+  {
+    id:'budget', save:'wtype',
+    msg:`<b>Budget?</b> (This decides which tools I recommend)<br><br>1. 🆓 Free — Only free tools, zero cost<br>2. 💰 Paid — I have budget (type amount, e.g. "$30/month")<br><br><i>Type a number or SKIP to assume free.</i>`,
+    qr:['1 — Free','SKIP']
+  },
+  {
+    id:'exp', save:'budget',
+    msg:`<b>Your experience level?</b><br><br>1. 🌱 Complete Beginner — No coding at all<br>2. 🔧 Some Experience — Used builders before<br>3. 💻 Intermediate — Can read/write code<br>4. 🚀 Advanced — Full-stack developer<br><br><i>Type a number or SKIP for beginner.</i>`,
+    qr:['1','2','3','4','SKIP']
+  },
+  {
+    id:'niche', save:'exp',
+    msg:`<b>Your niche / industry?</b><br><br>Examples: Finance, Health, Fashion, Tech, Food, Travel, Real Estate, Gaming, Education, Beauty, Fitness...<br><br><i>Type your niche or SKIP — I'll figure it out.</i>`,
+    qr:['SKIP']
+  },
+  {
+    id:'feats', save:'niche',
+    msg:`<b>Which features do you need?</b><br>Type numbers separated by commas, or SKIP.<br><br><b>Core:</b><br>1. User Login  2. Blog/Articles  3. Contact Form  4. Search<br><br><b>Commerce:</b><br>5. Product Catalog  6. Cart & Checkout  7. Payments<br><br><b>Advanced:</b><br>8. Dashboard  9. Email Alerts  10. SEO  11. Analytics  12. Social Sharing`,
+    qr:['1,3,10','1,2,3,10','5,6,7','SKIP']
+  },
+  {
+    id:'design', save:'feats',
+    msg:`<b>Design direction</b> — 3 quick picks:<br><br><b>Feel:</b> 1.Professional  2.Creative  3.Bold  4.Minimal  5.Playful  6.Luxurious<br><b>Mode:</b> A.Dark  B.Light  C.Auto<br><b>Motion:</b> X.None  Y.Subtle  Z.Rich<br><br>Type like <b>1AY</b> (Professional · Dark · Subtle) — or SKIP to auto-recommend.`,
+    qr:['1AY','2AZ','4BX','3AY','6BY','SKIP']
+  },
+  {
+    id:'platform', save:'design',
+    msg:`<b>Which AI tool will you use to build?</b><br><br>1. 🤖 Claude — architecture & logic<br>2. ⌨️ Cursor — code editor with AI<br>3. 💜 Lovable — natural language to full app<br>4. ⚡ Durable — fastest AI website builder<br>5. 🎨 Framer — design-first<br>6. 🔬 Google AI Studio — flexible<br>7. ❓ Not Sure — recommend for me<br><br><i>⚠️ This step is required — it decides how your prompts are written.</i>`,
+    qr:['1','2','3','4','5','6','7']
+  }
+];
+
+// ═══════════════════════════════
+// DESIGN MAPPING ENGINE
+// ═══════════════════════════════
+function mapDesign(d){
+  const feel=d.design_feel||'1', mode=d.design_mode||'A', anim=d.design_anim||'Y';
+  const wt=d.wtype||'1';
+
+  const palettes={
+    A:{name:'Midnight Dark',bg:'#0a0b0e',surface:'#0f1014',text:'#d4d8e2',accent:'#f59e0b'},
+    B:{name:'Clean White',bg:'#fafaf9',surface:'#ffffff',text:'#1c1917',accent:'#d97706'},
+    C:{name:'System Adaptive',bg:'system',surface:'system',text:'system',accent:'#f59e0b'}
+  };
+
+  const layoutMap={
+    '4A':'Bento Grid + Glassmorphism cards + Aurora gradient background',
+    '1B':'Editorial reading layout + generous whitespace + clean typography',
+    '2B':'Product grid + Minimal Luxury + warm accent',
+    '3A':'Bold hero + dark theme + high contrast CTAs',
+    '8A':'Aurora mesh background + floating 3D elements',
+    '8B':'Minimal Luxury + maximum whitespace + serif elegance',
+    '9B':'Warm editorial + trust signals + local photography',
+    '5A':'Dark community hub + activity feed + engagement-first'
+  };
+
+  const fonts={
+    '1':['Switzer','Inter'],'2':['Clash Display','Cabinet Grotesk'],
+    '3':['Fraunces','General Sans'],'4':['Satoshi','Satoshi Light'],
+    '5':['Cabinet Grotesk','DM Sans'],'6':['Fraunces','Satoshi Light']
+  };
+
+  const motions={
+    X:'None — fully static, maximum performance',
+    Y:'Subtle — scroll-triggered reveals, hover transitions, micro-interactions',
+    Z:'Rich — full parallax, entrance animations, magnetic buttons, scroll effects'
+  };
+
+  const layout=layoutMap[wt+mode]||layoutMap[wt+'A']||'Clean responsive grid + card-based layout';
+  const palette=palettes[mode]||palettes['A'];
+  const font=fonts[feel]||fonts['1'];
+  const motion=motions[anim]||motions['Y'];
+
+  return {layout,palette,font,motion};
+}
+
+// ═══════════════════════════════
+// STATIC PROMPT BUILDER
+// ═══════════════════════════════
+function buildStaticPrompts(d){
+  const plat=d.platform||'3';
+  const pname=PLATS[plat]||'Lovable';
+  const wtype=WTYPES[d.wtype]||'Website';
+  const niche=d.niche&&d.niche.toUpperCase()!=='SKIP'?d.niche:'your industry';
+  const budget=(!d.budget||d.budget==='1'||d.budget.toUpperCase()==='SKIP')?'Free tier only':d.budget;
+  const expMap={'1':'Complete Beginner','2':'Some Experience','3':'Intermediate','4':'Advanced'};
+  const exp=expMap[d.exp]||(d.exp?.toUpperCase()==='SKIP'?'Complete Beginner':'Complete Beginner');
+  const ctx=d.ctx&&d.ctx.toUpperCase()!=='SKIP'?d.ctx:'';
+
+  const featureNums=d.feats&&d.feats.toUpperCase()!=='SKIP'
+    ?d.feats.split(',').map(x=>x.trim()):['1','3','10'];
+  const fl=featureNums.map(n=>FEATURES[n]).filter(Boolean);
+
+  const ds=mapDesign(d);
+
+  // auto platform resolve
+  let resolvedPlat=plat;
+  if(plat==='7'){
+    if(exp==='Complete Beginner')resolvedPlat='4';
+    else if(exp==='Some Experience')resolvedPlat='3';
+    else resolvedPlat='2';
+  }
+  const rpname=PLATS[resolvedPlat]||'Lovable';
+
+  const countMap={'2':1,'3':2,'4':3,'skip':'auto'};
+  let count=countMap[d.pcount]||'auto';
+  if(count==='auto'){
+    if(resolvedPlat==='4')count=1;
+    else if(resolvedPlat==='2')count=3;
+    else count=2;
+  }
+
+  const P={};
+
+  // ── CLAUDE ──
+  P['1']=[
+    {title:'PROMPT 1 — Claude · Blueprint & Architecture',body:
+`You are an expert ${wtype} developer. Build me a complete ${wtype.toLowerCase()} for the ${niche} space.
+${ctx?`\nProject context: ${ctx}\n`:''}
+WEBSITE VISION:
+Create a ${wtype.toLowerCase()} that is immediately credible, conversion-focused, and serves its target audience with a premium, professional experience in the ${niche} market.
+
+DESIGN SYSTEM:
+Layout    : ${ds.layout}
+Palette   : ${ds.palette.name} — bg: ${ds.palette.bg}, text: ${ds.palette.text}, accent: ${ds.palette.accent}
+Typography: ${ds.font[0]} for headings, ${ds.font[1]} for body text
+Motion    : ${ds.motion}
+
+TECHNICAL REQUIREMENTS:
+${fl.map(f=>`• ${f}`).join('\n')}
+• Mobile-first responsive (breakpoints: 375px, 768px, 1280px)
+• Performance budget: LCP under 2.5s, CLS under 0.1
+• Accessibility: WCAG 2.1 AA compliant
+
+CONSTRAINTS:
+Budget    : ${budget}
+Experience: ${exp} — explain every decision clearly, avoid jargon
+Stack     : Prefer free-tier compatible (Vercel + Supabase free / Netlify + plain HTML)
+
+SUCCESS CRITERIA:
+✓ Every listed feature is fully implemented (no placeholder stubs)
+✓ Design exactly matches the specified palette and layout
+✓ Works on mobile without horizontal scroll
+✓ Deployable to Vercel free tier with zero paid dependencies
+
+TASK:
+Provide: (1) complete folder structure, (2) all page templates with real ${niche} content — no Lorem Ipsum, (3) full CSS matching the color palette, (4) JavaScript for all interactive features, (5) step-by-step deployment guide.`
+    },
+    {title:'PROMPT 2 — Claude · Refinement & Polish',body:
+`Using the codebase from Prompt 1, refine and complete the implementation:
+
+FOCUS AREAS:
+1. Polish every UI component to pixel-perfect match the ${ds.palette.name} design system
+2. Implement all ${fl.length} features completely — no UI-only shells
+3. Add loading states, error boundaries, and form validation
+4. SEO: proper meta tags, Open Graph, sitemap.xml, robots.txt
+5. Performance: lazy loading for images, defer non-critical JS
+
+DELIVERABLE:
+• Updated/complete file listing (only changed files)
+• CSS custom properties for the full design token system
+• Deployment checklist for going live on Vercel free tier`
+    }
+  ];
+
+  // ── CURSOR ──
+  P['2']=[
+    {title:'PROMPT 1 — Cursor · Project Architecture',body:
+`Set up the project architecture for a ${wtype.toLowerCase()} (${niche}).
+
+STACK: Next.js 14 (App Router) + TypeScript + Tailwind CSS
+
+GENERATE THESE FILES ONLY (no component code yet):
+• package.json — all required dependencies
+• tailwind.config.ts — custom color tokens below
+• tsconfig.json — strict mode
+• next.config.ts — image domains + performance flags
+• .env.example — all required environment variables
+• /app/layout.tsx — root layout with font imports
+• /lib/utils.ts — utility functions
+
+TAILWIND COLOR TOKENS:
+colors: {
+  brand: {
+    bg: '${ds.palette.bg}',
+    surface: '${ds.palette.surface}',
+    text: '${ds.palette.text}',
+    accent: '${ds.palette.accent}'
+  }
+}
+
+FONT: Import ${ds.font[0]} for display, ${ds.font[1]} for body via next/font/google.
+Do NOT write any page or component code in this prompt.`
+    },
+    {title:'PROMPT 2 — Cursor · Frontend Components & Pages',body:
+`Build all frontend components and pages using the architecture from Prompt 1.
+
+PAGES TO CREATE:
+• /app/page.tsx — Home page
+• /app/about/page.tsx — About
+${fl.includes('Blog / Articles')?'• /app/blog/page.tsx — Blog listing\n• /app/blog/[slug]/page.tsx — Blog post':''}
+${fl.includes('Product Catalog')?'• /app/products/page.tsx — Products':''}
+${fl.includes('Contact Form')?'• /app/contact/page.tsx — Contact':''}
+
+COMPONENTS (in /components/):
+${fl.map(f=>`• ${f.replace(/ /g,'')}.tsx`).join('\n')}
+
+DESIGN RULES:
+• Use Tailwind classes referencing brand.* color tokens only
+• ${ds.motion} animations — use framer-motion for all transitions
+• All components fully typed, no any types
+• Mobile-first styles (sm: → md: → lg:)`
+    },
+    {title:'PROMPT 3 — Cursor · Backend, API & Deployment',body:
+`Implement all backend logic and API routes for the project.
+
+API ROUTES in /app/api/:
+${fl.includes('User Login & Registration')?'• /api/auth/[...nextauth]/route.ts — NextAuth with email provider':''}
+${fl.includes('Contact Form')?'• /api/contact/route.ts — Contact form with email (Resend free tier)':''}
+${fl.includes('Shopping Cart & Checkout')?'• /api/checkout/route.ts — Stripe checkout session':''}
+• /api/health/route.ts — Health check endpoint
+
+DATABASE (use Supabase free tier or SQLite via Prisma):
+• schema.prisma — complete schema for all features
+• /lib/db.ts — database client
+
+CONSTRAINTS:
+• Budget: ${budget} — use free tiers only
+• All routes include error handling (try/catch + proper HTTP status codes)
+• Rate limiting on form submission endpoints
+
+FINAL DELIVERABLE:
+• vercel.json — deployment config
+• Step-by-step deploy guide (git push → live in 5 min)`
+    }
+  ];
+
+  // ── LOVABLE ──
+  P['3']=[
+    {title:'PROMPT 1 — Lovable · Full Blueprint',body:
+`Build me a complete ${wtype.toLowerCase()} for the ${niche} market.
+${ctx?`\nAbout my project: ${ctx}\n`:''}
+WHAT TO BUILD:
+A professional, conversion-focused ${wtype.toLowerCase()} that looks premium and works perfectly on mobile.
+
+FEATURES — all must be fully functional, not just UI:
+${fl.map(f=>`- ${f}`).join('\n')}
+
+DESIGN STYLE:
+- Color scheme: ${ds.palette.name} (${ds.palette.bg} background, ${ds.palette.accent} for buttons and accents)
+- Fonts: ${ds.font[0]} for headings, ${ds.font[1]} for body text
+- Layout: ${ds.layout}
+- Animations: ${ds.motion}
+
+CONTENT:
+- Use realistic ${niche} industry content throughout — NO Lorem Ipsum
+- Every page should feel like a real, launched product
+
+BUDGET: ${budget} — use only free-tier services and hosting.
+
+Make it look like it cost $10,000 to build.`
+    },
+    {title:'PROMPT 2 — Lovable · Refinement',body:
+`Improve and polish the website without rebuilding from scratch:
+
+1. Fix any features that are UI-only and make them actually work
+2. Improve mobile layout — test every page at 375px width
+3. Add proper error messages when forms fail
+4. Make all CTAs (buttons, links) clearly visible and clickable
+5. Speed up loading — compress images, remove unused code
+6. Add favicon, meta description, and Open Graph image
+
+DESIGN CHECK:
+- Verify ${ds.palette.name} color palette is consistent on every page
+- Ensure ${ds.font[0]} is used for all headings
+- Motion level: ${ds.motion}`
+    }
+  ];
+
+  // ── DURABLE ──
+  P['4']=[
+    {title:'PROMPT 1 — Durable · Complete Site',body:
+`Create a ${wtype.toLowerCase()} for a ${niche} business.
+${ctx?`\nAbout this business: ${ctx}\n`:''}
+Style: ${ds.palette.name.toLowerCase()} theme, ${['professional','creative','bold','minimal','playful','luxurious'][parseInt(d.design_feel||'1')-1]} feel.
+
+Pages needed: Home, About, Services, Contact
+${fl.includes('Blog / Articles')?'+ Blog':''}
+${fl.includes('Contact Form')?'+ Working contact form':''}
+${fl.includes('Product Catalog')?'+ Products / Services page':''}
+
+Tone: Professional, trustworthy, conversion-focused.
+Audience: ${niche} customers.
+Primary color accent: ${ds.palette.accent}
+
+Make it look modern and credible. Use realistic business content — not placeholder text.`
+    }
+  ];
+
+  // ── FRAMER ──
+  P['5']=[
+    {title:'PROMPT 1 — Framer · Design System & Layout',body:
+`Design a complete ${wtype.toLowerCase()} in Framer.
+
+VISUAL DIRECTION:
+Layout    : ${ds.layout}
+Background: ${ds.palette.bg}
+Text      : ${ds.palette.text}
+Accent    : ${ds.palette.accent}
+Build a 5-shade palette from this accent for hover/active states.
+
+TYPOGRAPHY SYSTEM:
+Display  : ${ds.font[0]} — 72/56/40px, font-weight 700–800
+Heading  : ${ds.font[0]} — 32/24px, font-weight 600
+Body     : ${ds.font[1]} — 16/18px, line-height 1.65
+Caption  : DM Mono — 12/13px for labels, tags, metadata
+
+MOTION DESIGN:
+${ds.motion}
+- Page load: staggered fade-in, 60ms delay between elements
+- Scroll: elements enter from bottom (translateY 24px → 0, opacity 0 → 1)
+- Buttons: scale(1.04) + soft glow on hover, scale(0.97) on press
+- Navigation: backdrop blur + border appears on scroll
+
+PAGES TO DESIGN:
+1. Home — hero, features grid, social proof, CTA section
+2. Services / Products — feature cards in ${ds.layout.split('+')[0].trim()}
+${fl.includes('Blog / Articles')?'3. Blog — editorial grid layout':''}
+4. Contact — minimal form design
+
+All components must be reusable and properly named in the Framer canvas.`
+    },
+    {title:'PROMPT 2 — Framer · Interactions & Responsive',body:
+`Finalize all component interactions and responsive behavior:
+
+FOR EACH COMPONENT:
+• Hover state: define exact scale, color, shadow values
+• Click/press: micro-animation (no more than 120ms)
+• Focus state: visible outline for accessibility
+
+BREAKPOINTS:
+• Desktop: 1280px — primary design
+• Tablet: 768px — adjust grid columns
+• Mobile: 375px — stack everything vertically, increase tap targets to 44px min
+
+REQUIRED ADDITIONS:
+• Mobile navigation — hamburger menu with slide-in drawer
+• Footer — full links, social icons, copyright
+• 404 page — on-brand design with back-to-home CTA
+• Loading skeleton — for any dynamic content sections`
+    }
+  ];
+
+  // ── AI STUDIO ──
+  P['6']=[
+    {title:'PROMPT 1 — Google AI Studio · Structured Blueprint',body:
+`## Website Generation Request
+
+### Project Overview
+| Field | Value |
+|---|---|
+| Type | ${wtype} |
+| Industry | ${niche} |
+| Budget | ${budget} |
+| Developer Experience | ${exp} |
+${ctx?`| Context | ${ctx} |`:''}
+
+### Feature Requirements
+${fl.map((f,i)=>`${i+1}. ${f}`).join('\n')}
+
+### Design Specification
+\`\`\`
+Layout    : ${ds.layout}
+Background: ${ds.palette.bg}
+Text      : ${ds.palette.text}
+Accent    : ${ds.palette.accent}
+Heading   : ${ds.font[0]}
+Body      : ${ds.font[1]}
+Motion    : ${ds.motion}
+\`\`\`
+
+### Deliverables Required
+1. Complete folder structure with all file paths
+2. All page templates with realistic ${niche} content
+3. Full CSS/styling matching the exact color spec above
+4. JavaScript for every interactive feature listed
+5. Free-tier deployment guide (Vercel/Netlify)
+
+### Acceptance Criteria
+- [ ] All ${fl.length} features are functional
+- [ ] Responsive at 375px, 768px, 1280px
+- [ ] Loads in under 2.5 seconds
+- [ ] Zero paid external dependencies`
+    },
+    {title:'PROMPT 2 — Google AI Studio · Detail & Polish',body:
+`## Quality & Detail Layer
+
+Based on the implementation from Prompt 1, add:
+
+### Performance
+- Lazy loading for all images below the fold
+- Critical CSS inlined in <head>
+- Defer all non-critical JavaScript
+
+### SEO Package
+- <title> and <meta description> for every page
+- Open Graph tags (og:title, og:description, og:image)
+- JSON-LD structured data appropriate for ${wtype}
+- sitemap.xml and robots.txt
+
+### Accessibility
+- ARIA labels on all interactive elements
+- Keyboard navigation works through entire site
+- Color contrast ratios meet WCAG AA (4.5:1 minimum)
+- Skip-to-content link at top of page
+
+### Error States
+- 404 page matching the design system
+- Form validation with clear inline error messages
+- Empty states for all list/grid views
+- Offline fallback message`
+    }
+  ];
+
+  const selected=P[resolvedPlat]||P['3'];
+  return{
+    prompts:selected.slice(0,count),
+    ds, pname:rpname, wtype, niche, fl
+  };
+}
+
+// ═══════════════════════════════
+// GEMINI API CALL
+// ═══════════════════════════════
+async function callGemini(d){
+  const ds=mapDesign(d);
+  const featureNums=d.feats&&d.feats.toUpperCase()!=='SKIP'
+    ?d.feats.split(',').map(x=>x.trim()):['1','3','10'];
+  const fl=featureNums.map(n=>FEATURES[n]).filter(Boolean);
+
+  let resolvedPlat=d.platform||'3';
+  if(resolvedPlat==='7'){
+    const exp=d.exp||'1';
+    if(exp==='1')resolvedPlat='4';
+    else if(exp==='2')resolvedPlat='3';
+    else resolvedPlat='2';
+  }
+  const pname=PLATS[resolvedPlat]||'Lovable';
+  const wtype=WTYPES[d.wtype]||'Website';
+  const niche=d.niche&&d.niche.toUpperCase()!=='SKIP'?d.niche:'general';
+  const countMap={'2':1,'3':2,'4':3};
+  const count=countMap[d.pcount]||(resolvedPlat==='4'?1:resolvedPlat==='2'?3:2);
+
+  const sysPrompt=`You are a Senior Website Workflow Architect with 12+ years experience building websites for creators and businesses. You write platform-specific, production-ready prompts. Be concrete, specific, and use the native language/style of each platform. Never be generic.`;
+
+  const userMsg=`Generate ${count} website building prompt(s) for ${pname}.
+
+USER DATA:
+- Website type: ${wtype}
+- Niche: ${niche}  
+- Budget: ${(!d.budget||d.budget==='1'||d.budget.toUpperCase()==='SKIP')?'Free only':d.budget}
+- Experience: ${{'1':'Complete Beginner','2':'Some Experience','3':'Intermediate','4':'Advanced'}[d.exp]||'Beginner'}
+- Features needed: ${fl.join(', ')}
+- Design: ${ds.layout} / ${ds.palette.name} palette / ${ds.font[0]} font
+- User context: ${d.ctx||'Not provided'}
+
+For EACH prompt, use this exact structure (keep the headers):
+PROMPT [N] — [Name]
+
+PLATFORM CONTEXT: [what ${pname} does well + its specific limits]
+WEBSITE VISION: [specific purpose referencing their niche and context]
+TECHNICAL REQUIREMENTS: [features as numbered requirements]
+DESIGN DIRECTION: [design system in ${pname}'s native language style]
+CONSTRAINTS: [budget and experience level implications]
+SUCCESS CRITERIA: [3-5 measurable, specific outcomes]
+TASK: [the actual instruction written exactly in ${pname}'s native style]
+OUTPUT SPECIFICATION: [precisely what will be produced]
+
+Write as if you've built 50 ${wtype} websites in the ${niche} space. Reference their specific context throughout.`;
+
+  const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      system_instruction:{parts:[{text:sysPrompt}]},
+      contents:[{parts:[{text:userMsg}]}],
+      generationConfig:{temperature:0.7,maxOutputTokens:4096,topP:0.9}
+    })
+  });
+
+  if(!res.ok){const e=await res.json();throw new Error(e.error?.message||'Gemini API error');}
+  const json=await res.json();
+  const raw=json.candidates?.[0]?.content?.parts?.[0]?.text||'';
+
+  // Split on "PROMPT N" boundaries
+  const parts=raw.split(/(?=PROMPT \d+\s*[—–-])/i).filter(p=>p.trim().length>30);
+  const prompts=parts.map((p,i)=>{
+    const titleMatch=p.match(/PROMPT\s*\d+\s*[—–-]\s*(.+?)[\n\r]/i);
+    const title=titleMatch?`PROMPT ${i+1} — ${titleMatch[1].trim()}`:`PROMPT ${i+1} — ${pname} (AI)`;
+    return{title, body:p.replace(/PROMPT\s*\d+\s*[—–-]\s*.+?[\n\r]/i,'').trim()};
+  });
+
+  return{prompts, ds, pname, wtype, niche, fl};
+}
+
+// ═══════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════
+const msgsEl=()=>document.getElementById('msgs');
+const qrEl=()=>document.getElementById('qr-row');
+
+function addMsg(role,html){
+  const d=document.createElement('div');
+  d.className=`msg ${role}`;
+  const av=document.createElement('div');
+  av.className=`av av-${role}`;
+  av.textContent=role==='bot'?'W':'U';
+  const b=document.createElement('div');
+  b.className='bubble';
+  b.innerHTML=html.replace(/\n/g,'<br>');
+  d.appendChild(av);d.appendChild(b);
+  msgsEl().appendChild(d);
+  msgsEl().scrollTop=msgsEl().scrollHeight;
+  return b;
+}
+
+function showTyping(){
+  const d=document.createElement('div');
+  d.className='msg bot';d.id='typingEl';
+  d.innerHTML=`<div class="av av-bot">W</div><div class="bubble"><div class="typing-wrap"><span></span><span></span><span></span></div></div>`;
+  msgsEl().appendChild(d);
+  msgsEl().scrollTop=msgsEl().scrollHeight;
+}
+function hideTyping(){const e=document.getElementById('typingEl');if(e)e.remove();}
+
+function setQR(arr){
+  const el=qrEl();el.innerHTML='';
+  if(!arr||!arr.length)return;
+  arr.forEach(t=>{
+    const b=document.createElement('button');
+    b.className='qr-btn';b.textContent=t;
+    b.onclick=()=>{document.getElementById('inp').value=t;send();};
+    el.appendChild(b);
+  });
+}
+
+function updateProgress(){
+  const pct=Math.min(Math.round((step/TOTAL)*100),100);
+  document.getElementById('pbar').style.width=pct+'%';
+  document.getElementById('step-pct').textContent=pct+'%';
+  document.getElementById('step-label').textContent=
+    step===0?'Ready to start':step>=TOTAL?'Complete':'Step '+step+' of '+TOTAL;
+}
+
+function growInput(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,110)+'px';
+}
+
+function onKey(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
+}
+
+// mode switch
+function switchMode(m){
+  mode=m;
+  document.getElementById('card-static').classList.toggle('active',m==='static');
+  document.getElementById('card-gemini').classList.toggle('active',m==='gemini');
+  document.getElementById('api-box').classList.toggle('show',m==='gemini');
+  const modeLabel=document.getElementById('mode-label');
+  modeLabel.innerHTML=`Mode: <span>${m==='gemini'?'✨ Gemini AI':'⚡ Static'}</span>`;
+}
+
+function connectKey(){
+  const v=document.getElementById('key-in').value.trim();
+  const msg=document.getElementById('key-msg');
+  if(!v.startsWith('AIza')){msg.className='api-msg err';msg.textContent='✗ Invalid key. Should start with "AIza..."';return;}
+  apiKey=v;
+  msg.className='api-msg ok';
+  msg.textContent='✓ Connected! Gemini AI Mode is ready.';
+}
+
+// render prompt results
+function renderResults(result){
+  const {prompts,ds,pname,wtype,niche,fl}=result;
+
+  // summary bubble
+  addMsg('bot',
+    `<b>✅ Prompts generated!</b><br><br>`+
+    `<b>Platform:</b> ${pname}<br>`+
+    `<b>Website:</b> ${wtype} · ${niche}<br>`+
+    `<b>Design:</b> ${ds.layout.split('+')[0].trim()}<br>`+
+    `<b>Features:</b> ${fl.slice(0,4).join(', ')}${fl.length>4?`… +${fl.length-4} more`:''}<br><br>`+
+    `<b>${prompts.length} prompt${prompts.length>1?'s':''} ready below ↓</b>`
+  );
+
+  // each prompt
+  prompts.forEach((p,i)=>{
+    const bubble=addMsg('bot',`<div class="prompt-card"><div class="prompt-title">${p.title}</div><div class="code-block" id="pc${i}">${esc(p.body)}</div></div>`);
+    // inject copy button after render
+    setTimeout(()=>{
+      const card=document.querySelectorAll('.prompt-card')[i];
+      if(!card)return;
+      const btn=document.createElement('button');
+      btn.className='copy-btn';
+      btn.innerHTML='📋 Copy Prompt';
+      btn.onclick=()=>{
+        navigator.clipboard.writeText(p.body).then(()=>{
+          btn.innerHTML='✓ Copied!';btn.classList.add('done');
+          setTimeout(()=>{btn.innerHTML='📋 Copy Prompt';btn.classList.remove('done');},2000);
+        });
+      };
+      card.appendChild(btn);
+    },50);
+  });
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ═══════════════════════════════
+// MAIN SEND / FLOW
+// ═══════════════════════════════
+async function send(){
+  const inp=document.getElementById('inp');
+  const val=inp.value.trim();
+  if(!val||busy)return;
+  inp.value='';inp.style.height='auto';
+  addMsg('user',esc(val));
+  setQR([]);
+  busy=true;
+  document.getElementById('send-btn').disabled=true;
+
+  showTyping();
+  await sleep(550);
+  hideTyping();
+
+  await advance(val);
+
+  busy=false;
+  document.getElementById('send-btn').disabled=false;
+  updateProgress();
+}
+
+async function advance(val){
+  const cur=STEPS[step];
+  if(!cur)return;
+
+  // save data
+  if(cur.save) data[cur.save]=val;
+
+  // special: parse design code
+  if(cur.id==='design'&&val.toUpperCase()!=='SKIP'){
+    const v=val.toUpperCase();
+    data.design_feel=v.match(/[1-6]/)?.[0]||'1';
+    data.design_mode=v.match(/[ABC]/)?.[0]||'A';
+    data.design_anim=v.match(/[XYZ]/)?.[0]||'Y';
+  }
+  // prompt count from next step
+  if(cur.id==='platform'){
+    data.platform=val.replace(/[^1-7]/g,'')||val;
+  }
+
+  step++;
+
+  if(step<STEPS.length){
+    const next=STEPS[step];
+    addMsg('bot',next.msg);
+    setQR(next.qr||[]);
+  } else {
+    // last step — prompt count
+    data.pcount=val;
+    await generate();
+  }
+}
+
+async function generate(){
+  showTyping();
+  addMsg('bot','<b>Perfect!</b> Generating your production-ready prompts now...');
+
+  // resolve platform 7
+  if(data.platform==='7'||!data.platform){
+    const e=data.exp||'1';
+    data.platform=e==='1'?'4':e==='2'?'3':'2';
+  }
+
+  try{
+    let result;
+    if(mode==='gemini'&&apiKey){
+      result=await callGemini(data);
+    }else{
+      await sleep(1400);
+      result=buildStaticPrompts(data);
+    }
+    hideTyping();
+    renderResults(result);
+  }catch(err){
+    hideTyping();
+    addMsg('bot',`⚠️ <b>Gemini error:</b> ${esc(err.message)}<br><br>Falling back to Static Mode...`);
+    await sleep(600);
+    hideTyping();
+    const result=buildStaticPrompts(data);
+    renderResults(result);
+  }
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+function restart(){
+  step=0;data={};
+  msgsEl().innerHTML='';
+  setQR([]);
+  updateProgress();
+  setTimeout(()=>{
+    const first=STEPS[0];
+    addMsg('bot',first.msg);
+    setQR(first.qr||[]);
+  },200);
+}
+
+// ─── INIT ───
+updateProgress();
+setTimeout(()=>{
+  const first=STEPS[0];
+  addMsg('bot',first.msg);
+  setQR(first.qr||[]);
+},300);
+</script>
+</body>
+</html>
